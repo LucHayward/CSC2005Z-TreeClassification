@@ -1,6 +1,7 @@
 # Quickly add random forests
 # Include NDVI Data
 # Split into small groups and then calculate on the center pixel
+# Sample lots of areas based on the mask, gen random samples to place centers at and make sure some are transition areas and some fully inside/outside.
 import matplotlib
 
 matplotlib.use('macosx')
