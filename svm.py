@@ -1,48 +1,54 @@
-# Quickly add random forests
-# Include NDVI Data
-# Split into small groups and then calculate on the center pixel
-# Sample lots of areas based on the mask, gen random samples to place centers at and make sure some are transition areas and some fully inside/outside.
-import matplotlib
-
-matplotlib.use('macosx')
+from sklearn import svm
+import input
 
 import numpy as np
-from sklearn import svm, datasets
-import matplotlib.pyplot as plt
 
-mask_truth = plt.imread("/Users/luc/Desktop/247-2528-1613-2017-07-31/247-2528-1613-2017-07-31_mask.tif")
+X, Y = input.get_scans("/Users/luc/Desktop/247-2528-1613-2017-07-31")
+inputimage = X.copy()
 
-# Reads in as red,green,blue,alpha as expected
-scan = plt.imread("/Users/luc/Desktop/247-2528-1613-2017-07-31/247-2528-1613-2017-07-31.tif")
+startRow, endRow, startCol, endCol = 990, 1090, 2030, 2130
 
-# Remove alpha
-scan = scan[:, :, :3]
 
-X = scan
-Y = mask_truth
+Y = Y[startRow:endRow, startCol:endCol]
+X = X[startRow:endRow, startCol:endCol, :]
 
-plt.figure(1)
-plt.imshow(Y[990:1090, 2030:2130])
+shapeY, shapeX, shapeInputImage = Y.shape, X.shape, inputimage[:, :, 0].shape
 
-plt.figure(2)
-plt.imshow(X[990:1090, 2030:2130, :])
-
-#
-Y = Y[990:1090, 2030:2130]
-X = X[990:1090, 2030:2130, :]
-
-shape1 = Y.shape
-
-X = X.reshape(-1, 3)
+X = X.reshape(-1, 4)
 Y = Y.reshape(-1)
 Y = np.clip(Y, 0, 1)
 
+import time
+
+start_time = time.time()
 C = 1.0  # SVM regularization parameter
-
 svc = svm.SVC(kernel='linear', C=C).fit(X, Y)
-Z = svc.predict(X)
 
-plt.figure(3)
-plt.imshow(Z.reshape(shape1))
+print("Trained model")
+print("Time to train: " + str(time.time() - start_time) + "seconds for " + str(
+    (endCol - startCol) * (endRow - startRow)) + " samples")
 
-plt.show()
+
+def predict_mask(folder_path):
+    inputimage, fuckoff = input.get_scans(folder_path)
+    shapeInputImage = inputimage[:, :, 0].shape
+
+    start_time = time.time()
+
+    Z = svc.predict(inputimage.reshape(-1,4))
+
+    # print("Finished predicting")
+    print("Time to predict: " + str(time.time() - start_time) + " seconds for a " + str(shapeInputImage) + " scan")
+    print(folder_path)
+
+    from PIL import Image
+    from scipy.ndimage import median_filter
+    Z = Z.reshape(shapeInputImage)
+    Z = median_filter(Z*255, size=10)
+    # print(np.unique(Z))
+    np.round(Z, 0)
+    # print(np.unique(Z))
+    im = Image.fromarray((Z), 'L')
+    im.save("predictionSVM.tif")
+
+
