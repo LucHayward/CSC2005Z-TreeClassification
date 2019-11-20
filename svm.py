@@ -30,7 +30,7 @@ print("Time to train: " + str(time.time() - start_time) + "seconds for " + str(
 
 
 def predict_mask(folder_path):
-    inputimage, fuckoff = input.get_scans(folder_path)
+    inputimage, _ = input.get_scans(folder_path)
     shapeInputImage = inputimage[:, :, 0].shape
 
     start_time = time.time()
